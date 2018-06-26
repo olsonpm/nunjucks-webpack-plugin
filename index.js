@@ -1,10 +1,10 @@
-"use strict";
+'use strict'
 
-const fs = require("fs-extra");
-const path = require("path");
-const nunjucks = require("nunjucks");
+const fs = require('fs-extra')
+const nunjucks = require('nunjucks')
+const path = require('path')
 
-const pluginName = "NunjucksWebpackPlugin";
+const pluginName = 'NunjucksWebpackPlugin'
 
 class NunjucksWebpackPlugin {
   constructor(options) {
@@ -13,32 +13,32 @@ class NunjucksWebpackPlugin {
       {
         configure: {
           options: {},
-          path: ""
+          path: '',
         },
-        templates: []
+        templates: [],
       },
       options || {}
-    );
+    )
 
     if (
       !Array.isArray(this.options.templates) ||
       this.options.templates.length === 0
     ) {
-      throw new Error("Options `templates` must be an empty array");
+      throw new Error('Options `templates` must be an empty array')
     }
   }
 
   apply(compiler) {
-    const fileDependencies = [];
+    const fileDependencies = []
 
-    let output = compiler.options.output.path;
+    let output = compiler.options.output.path
 
     if (
-      output === "/" &&
+      output === '/' &&
       compiler.options.devServer &&
       compiler.options.devServer.outputPath
     ) {
-      output = compiler.options.devServer.outputPath;
+      output = compiler.options.devServer.outputPath
     }
 
     const emitCallback = (compilation, callback) => {
@@ -48,21 +48,21 @@ class NunjucksWebpackPlugin {
           : nunjucks.configure(
               this.options.configure.path,
               this.options.configure.options
-            );
+            )
 
-      const promises = [];
+      const promises = []
 
       this.options.templates.forEach(template => {
         if (!template.from) {
-          throw new Error("Each template should have `from` option");
+          throw new Error('Each template should have `from` option')
         }
 
         if (!template.to) {
-          throw new Error("Each template should have `to` option");
+          throw new Error('Each template should have `to` option')
         }
 
         if (fileDependencies.indexOf(template.from) === -1) {
-          fileDependencies.push(template.from);
+          fileDependencies.push(template.from)
         }
 
         const context = createContext(template.context, compilation)
@@ -71,73 +71,76 @@ class NunjucksWebpackPlugin {
           template.from,
           context,
           template.callback ? template.callback : null
-        );
+        )
 
-        let webpackTo = template.to;
+        let webpackTo = template.to
 
         if (path.isAbsolute(webpackTo)) {
-          webpackTo = path.relative(output, webpackTo);
+          webpackTo = path.relative(output, webpackTo)
         }
 
         const source = {
           size: () => res.length,
-          source: () => res
-        };
+          source: () => res,
+        }
 
-        compilation.assets[webpackTo] = source;
+        compilation.assets[webpackTo] = source
 
         if (template.writeToFileEmit) {
-          const fileDest = path.join(output, webpackTo);
+          const fileDest = path.join(output, webpackTo)
 
-          promises.push(fs.outputFile(fileDest, source.source()));
+          promises.push(fs.outputFile(fileDest, source.source()))
         }
-      });
+      })
 
       return (
         Promise.all(promises)
           // eslint-disable-next-line promise/no-callback-in-promise
           .then(() => callback())
           .catch(error => {
-            compilation.errors.push(error);
+            compilation.errors.push(error)
 
             // eslint-disable-next-line promise/no-callback-in-promise
-            return callback();
+            return callback()
           })
-      );
-    };
+      )
+    }
 
     const afterEmitCallback = (compilation, callback) => {
-      let compilationFileDependencies = compilation.fileDependencies;
-      let addFileDependency = file => compilation.fileDependencies.add(file);
+      let compilationFileDependencies = compilation.fileDependencies
+      let addFileDependency = file => compilation.fileDependencies.add(file)
 
       if (Array.isArray(compilation.fileDependencies)) {
-        compilationFileDependencies = new Set(compilation.fileDependencies);
-        addFileDependency = file => compilation.fileDependencies.push(file);
+        compilationFileDependencies = new Set(compilation.fileDependencies)
+        addFileDependency = file => compilation.fileDependencies.push(file)
       }
 
       for (const file of fileDependencies) {
         if (!compilationFileDependencies.has(file)) {
-          addFileDependency(file);
+          addFileDependency(file)
         }
       }
 
-      return callback();
-    };
+      return callback()
+    }
 
     if (compiler.hooks) {
-      compiler.hooks.emit.tapAsync(pluginName, emitCallback);
-      compiler.hooks.afterEmit.tapAsync(pluginName, afterEmitCallback);
+      compiler.hooks.emit.tapAsync(pluginName, emitCallback)
+      compiler.hooks.afterEmit.tapAsync(pluginName, afterEmitCallback)
     } else {
-      compiler.plugin("emit", emitCallback);
-      compiler.plugin("after-emit", afterEmitCallback);
+      compiler.plugin('emit', emitCallback)
+      compiler.plugin('after-emit', afterEmitCallback)
     }
   }
 }
 
 function createContext(templateContext, compilation) {
-  return Object.assign({
-    nunjucksWebpackPlugin: getPluginContext(compilation)
-  }, templateContext || {})
+  return Object.assign(
+    {
+      nunjucksWebpackPlugin: getPluginContext(compilation),
+    },
+    templateContext || {}
+  )
 }
 
 function getPluginContext(compilation) {
@@ -151,8 +154,8 @@ function getPluginContext(compilation) {
 function endsWith(str) {
   return data => {
     if (data.length < str.length) return false
-    else return data.slice(-(str.length)) === str
+    else return data.slice(-str.length) === str
   }
 }
 
-module.exports = NunjucksWebpackPlugin;
+module.exports = NunjucksWebpackPlugin
