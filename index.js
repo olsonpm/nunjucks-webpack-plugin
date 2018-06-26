@@ -65,9 +65,11 @@ class NunjucksWebpackPlugin {
           fileDependencies.push(template.from);
         }
 
+        const context = createContext(template.context, compilation)
+
         const res = configure.render(
           template.from,
-          template.context ? template.context : null,
+          context,
           template.callback ? template.callback : null
         );
 
@@ -129,6 +131,27 @@ class NunjucksWebpackPlugin {
       compiler.plugin("emit", emitCallback);
       compiler.plugin("after-emit", afterEmitCallback);
     }
+  }
+}
+
+function createContext(templateContext, compilation) {
+  return Object.assign({
+    nunjucksWebpackPlugin: getPluginContext(compilation)
+  }, templateContext || {})
+}
+
+function getPluginContext(compilation) {
+  const assetNames = Object.keys(compilation.assets)
+  return {
+    js: assetNames.filter(endsWith('.js')),
+    css: assetNames.filter(endsWith('.css')),
+  }
+}
+
+function endsWith(str) {
+  return data => {
+    if (data.length < str.length) return false
+    else return data.slice(-(str.length)) === str
   }
 }
 
