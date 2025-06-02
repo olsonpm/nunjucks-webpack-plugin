@@ -145,9 +145,23 @@ function createContext(templateContext, compilation) {
 
 function getPluginContext(compilation) {
   const assetNames = Object.keys(compilation.assets)
+  /**
+   * this is very hacky - I'm sick of figuring out the labyrinth that is webpack
+   * and don't intend on coming back to this often enough to warrant the
+   * time spent
+   */
+  const firstCssAssetName = assetNames.filter(endsWith('.css'))[0]
+  let cssInline = ''
+  if (firstCssAssetName) {
+    const cssAsset = compilation.assets[firstCssAssetName]
+    const cssStr = cssAsset.children[0]._value
+    const cssSrcMappingUrlLine = cssAsset.children[1]
+    cssInline = cssStr + cssSrcMappingUrlLine
+  }
   return {
     js: assetNames.filter(endsWith('.js')),
     css: assetNames.filter(endsWith('.css')),
+    cssInline,
   }
 }
 
